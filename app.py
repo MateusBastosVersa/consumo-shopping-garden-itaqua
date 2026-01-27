@@ -1,137 +1,124 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
+import plotly.express as px
 
-# ===============================
-# CONFIGURAÇÃO DA PÁGINA
-# ===============================
 st.set_page_config(
-    page_title="Consumo de Energia | Shopping Garden Itaqua",
-    layout="centered"
+    page_title="Consumo Shopping Garden Itaqua",
+    layout="wide"
 )
 
-st.title("📊 Consumo de Energia — Shopping Garden Itaqua")
-
+# =========================
+# 📂 CARREGAR EXCEL
+# =========================
 arquivo_excel = "ConsumoDiario.xlsx"
 
-# ===============================
-# LEITURA DOS DADOS
-# ===============================
-
-# --- TABELA 1: CONSUMO DIÁRIO ---
-df_diario = pd.read_excel(
+# ---------- GRÁFICO 1 | Tabela ----------
+df_tabela1 = pd.read_excel(
     arquivo_excel,
-    sheet_name="Tabela"
+    sheet_name="Tabela",
+    header=3,
+    usecols="B:D"
 )
 
-# --- TABELA 2: CONSUMO HORÁRIO ---
-df_horario_raw = pd.read_excel(
+df_tabela1.columns = ["Categoria", "Consumo", "Custo"]
+df_tabela1["Consumo"] = pd.to_numeric(df_tabela1["Consumo"], errors="coerce")
+df_tabela1["Custo"] = pd.to_numeric(df_tabela1["Custo"], errors="coerce")
+df_tabela1 = df_tabela1.dropna()
+
+# ---------- GRÁFICO 2 | Tabela2 ----------
+df_horario = pd.read_excel(
     arquivo_excel,
     sheet_name="Tabela2",
-    skiprows=3
+    header=3,
+    usecols="B:C"
 )
 
-# Garantir apenas as 3 colunas corretas
-df_horario = df_horario_raw.iloc[:, :3].copy()
-df_horario.columns = ["Hora", "Energia_kwh", "Energia_mwh"]
-
-# Converter hora para inteiro (segurança)
+df_horario.columns = ["Hora", "Consumo"]
 df_horario["Hora"] = pd.to_numeric(df_horario["Hora"], errors="coerce")
+df_horario["Consumo"] = pd.to_numeric(df_horario["Consumo"], errors="coerce")
+df_horario = df_horario.dropna()
 
-# --- TABELA 3: CONSUMO MENSAL ---
+# Data na célula C2
+data_ref = pd.read_excel(
+    arquivo_excel,
+    sheet_name="Tabela2",
+    header=None,
+    usecols="C",
+    nrows=2
+).iloc[1, 0]
+
+# ---------- GRÁFICO 3 | Tabela3 ----------
 df_mensal = pd.read_excel(
     arquivo_excel,
     sheet_name="Tabela3"
 )
 
-# ===============================
-# GRÁFICO 1 — CONSUMO DIÁRIO
-# ===============================
-st.subheader("🔹 Consumo Diário")
+df_mensal.iloc[:, 0] = pd.to_datetime(df_mensal.iloc[:, 0], errors="coerce")
+df_mensal.iloc[:, 1] = pd.to_numeric(df_mensal.iloc[:, 1], errors="coerce")
+df_mensal = df_mensal.dropna()
 
-fig1, ax1 = plt.subplots(figsize=(6, 4))
+df_mensal.columns = ["Data", "Consumo"]
+df_mensal["Mes"] = df_mensal["Data"].dt.strftime("%m/%Y")
 
-bars = ax1.bar(
-    df_diario.iloc[:, 0],
-    df_diario.iloc[:, 3],
-    color="#90bf3b"
+# =========================
+# 📊 GRÁFICOS
+# =========================
+
+st.title("📊 Consumo de Energia – Shopping Garden Itaqua")
+
+# ---------- GRÁFICO 1 ----------
+fig1 = px.bar(
+    df_tabela1,
+    x="Categoria",
+    y="Consumo",
+    text="Consumo",
+    title="Consumo por Categoria"
 )
 
-for bar in bars:
-    ax1.text(
-        bar.get_x() + bar.get_width() / 2,
-        bar.get_height(),
-        f"{bar.get_height():,.0f}",
-        ha="center",
-        va="bottom",
-        fontsize=8
-    )
+fig1.update_traces(
+    texttemplate="%{y:.1f}",
+    hovertemplate="%{y:.1f}"
+)
+fig1.update_yaxes(tickformat=".1f")
+fig1.update_layout(height=420)
 
-ax1.set_ylabel("")
-ax1.set_yticks([])
-plt.xticks(rotation=45)
+st.plotly_chart(fig1, use_container_width=True)
 
-st.pyplot(fig1)
-
-# ===============================
-# GRÁFICO 2 — CONSUMO HORÁRIO
-# ===============================
-st.subheader("🔹 Consumo Horário")
-
-fig2, ax2 = plt.subplots(figsize=(7, 4))
-
-bars = ax2.bar(
-    df_horario["Hora"],
-    df_horario["Energia_mwh"],
-    color="#263a64"
+# ---------- GRÁFICO 2 ----------
+fig2 = px.bar(
+    df_horario,
+    x="Hora",
+    y="Consumo",
+    text="Consumo",
+    title=f"Consumo Horário – {pd.to_datetime(data_ref).strftime('%d/%m/%Y')}"
 )
 
-for bar in bars:
-    ax2.text(
-        bar.get_x() + bar.get_width() / 2,
-        bar.get_height(),
-        f"{bar.get_height():,.0f}",
-        ha="center",
-        va="bottom",
-        fontsize=8
-    )
-
-ax2.set_xlim(1, 24)
-ax2.set_xticks(range(1, 25))
-ax2.set_ylabel("")
-ax2.set_yticks([])
-ax2.set_xlabel("Hora")
-
-st.pyplot(fig2)
-
-# ===============================
-# GRÁFICO 3 — CONSUMO MENSAL
-# ===============================
-st.subheader("🔹 Consumo Mensal")
-
-df_mensal["Data"] = pd.to_datetime(df_mensal["Data"])
-df_mensal["MesAno"] = df_mensal["Data"].dt.strftime("%B/%Y")
-
-fig3, ax3 = plt.subplots(figsize=(6, 4))
-
-bars = ax3.bar(
-    df_mensal["MesAno"],
-    df_mensal["Energia Ativa (kwh)"],
-    color="#a3afc4"
+fig2.update_traces(
+    texttemplate="%{y:.1f}",
+    hovertemplate="%{y:.1f}"
+)
+fig2.update_yaxes(tickformat=".1f")
+fig2.update_layout(
+    height=420,
+    xaxis=dict(tickmode="linear")
 )
 
-for bar in bars:
-    ax3.text(
-        bar.get_x() + bar.get_width() / 2,
-        bar.get_height(),
-        f"{bar.get_height():,.0f}",
-        ha="center",
-        va="bottom",
-        fontsize=8
-    )
+st.plotly_chart(fig2, use_container_width=True)
 
-ax3.set_ylabel("")
-ax3.set_yticks([])
-plt.xticks(rotation=30)
+# ---------- GRÁFICO 3 ----------
+fig3 = px.bar(
+    df_mensal,
+    x="Mes",
+    y="Consumo",
+    text="Consumo",
+    title="Consumo Mensal"
+)
 
-st.pyplot(fig3)
+fig3.update_traces(
+    texttemplate="%{y:.1f}",
+    hovertemplate="%{y:.1f}"
+)
+fig3.update_yaxes(tickformat=".1f")
+fig3.update_layout(height=420)
+
+st.plotly_chart(fig3, use_container_width=True)
