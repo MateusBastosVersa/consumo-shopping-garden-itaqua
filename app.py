@@ -2,126 +2,104 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# =============================
+# ===============================
 # CONFIGURAÇÃO DA PÁGINA
-# =============================
+# ===============================
 st.set_page_config(
     page_title="Consumo de Energia | Shopping Garden Itaqua",
-    layout="centered"  # 👈 EVITA GRÁFICO GIGANTE
+    layout="centered"
 )
 
 st.title("📊 Consumo de Energia — Shopping Garden Itaqua")
 
-# =============================
-# LEITURA DO EXCEL
-# =============================
 arquivo_excel = "ConsumoDiario.xlsx"
 
-# -------- TABELA PRINCIPAL (Consumo Diário) --------
-df_diario = pd.read_excel(
-    arquivo_excel,
-    sheet_name="ConsumoDiario"
-)
+# ===============================
+# LEITURA DAS ABAS CORRETAS
+# ===============================
+df_diario = pd.read_excel(arquivo_excel, sheet_name="Tabela")
+df_horario = pd.read_excel(arquivo_excel, sheet_name="Tabela2")
+df_mensal = pd.read_excel(arquivo_excel, sheet_name="Tabela3")
 
-# -------- TABELA HORÁRIA --------
-df_horario = pd.read_excel(
-    arquivo_excel,
-    sheet_name="Tabela2"
-)
-
-# -------- TABELA MENSAL --------
-df_tabela3 = pd.read_excel(
-    arquivo_excel,
-    sheet_name="Tabela3"
-)
-
-# =============================
-# AJUSTES DE DADOS
-# =============================
-
-# --- Consumo horário: garantir horas 1 a 24 ---
-horas_completas = pd.DataFrame({"Hora": range(1, 25)})
-df_horario = horas_completas.merge(df_horario, on="Hora", how="left")
-df_horario["Consumo"] = df_horario["Consumo"].fillna(0)
-
-# --- Consumo mensal: criar coluna Mês/Ano ---
-df_tabela3["Data"] = pd.to_datetime(df_tabela3["Data"])
-df_tabela3["Mes_Ano"] = df_tabela3["Data"].dt.strftime("%B/%Y")
-
-# =============================
-# CORES PADRÃO
-# =============================
-CORES = {
-    "verde": "#90bf3b",
-    "azul": "#263a64",
-    "cinza": "#a3afc4"
-}
-
-# =============================
+# ===============================
 # GRÁFICO 1 — CONSUMO DIÁRIO
-# =============================
-st.subheader("📅 Consumo Diário")
+# ===============================
+st.subheader("🔹 Consumo Diário")
 
-fig1, ax1 = plt.subplots(figsize=(7, 3))  # 👈 ZOOM CONTROLADO
+fig1, ax1 = plt.subplots(figsize=(6, 4))  # <<< ZOOM CONTROLADO
 
-ax1.bar(
-    df_diario["Data"],
-    df_diario["Consumo"],
-    color=CORES["verde"]
+bars = ax1.bar(
+    df_diario.iloc[:, 0],
+    df_diario.iloc[:, 1],
+    color="#90bf3b"
 )
 
-ax1.set_title("Consumo Diário de Energia")
+for bar in bars:
+    ax1.text(
+        bar.get_x() + bar.get_width() / 2,
+        bar.get_height(),
+        f"{bar.get_height():,.0f}",
+        ha="center",
+        va="bottom",
+        fontsize=8
+    )
+
+ax1.set_ylabel("")
+ax1.set_yticks([])
 ax1.set_xlabel("")
-ax1.set_ylabel("kWh")
-
 plt.xticks(rotation=45)
+st.pyplot(fig1)
 
-st.pyplot(fig1, clear_figure=True)
-
-# =============================
+# ===============================
 # GRÁFICO 2 — CONSUMO HORÁRIO
-# =============================
-st.subheader("⏰ Consumo Horário")
+# ===============================
+st.subheader("🔹 Consumo Horário")
 
-fig2, ax2 = plt.subplots(figsize=(7, 3))  # 👈 ZOOM CONTROLADO
+fig2, ax2 = plt.subplots(figsize=(7, 4))  # <<< ZOOM CONTROLADO
 
-ax2.plot(
+ax2.bar(
     df_horario["Hora"],
     df_horario["Consumo"],
-    marker="o",
-    color=CORES["azul"]
+    color="#263a64"
 )
 
-ax2.set_title("Consumo Horário Médio")
-ax2.set_xlabel("Hora")
-ax2.set_ylabel("kWh")
+ax2.set_xlim(1, 24)
 ax2.set_xticks(range(1, 25))
+ax2.set_ylabel("")
+ax2.set_yticks([])
+ax2.set_xlabel("Hora")
 
-st.pyplot(fig2, clear_figure=True)
+st.pyplot(fig2)
 
-# =============================
+# ===============================
 # GRÁFICO 3 — CONSUMO MENSAL
-# =============================
-st.subheader("📆 Consumo Mensal")
+# ===============================
+st.subheader("🔹 Consumo Mensal")
 
-fig3, ax3 = plt.subplots(figsize=(7, 3))  # 👈 ZOOM CONTROLADO
+df_mensal["Data"] = pd.to_datetime(df_mensal["Data"])
+df_mensal["MesAno"] = df_mensal["Data"].dt.strftime("%B/%Y")
 
-ax3.bar(
-    df_tabela3["Mes_Ano"],
-    df_tabela3["Energia Ativa (kwh)"],
-    color=CORES["cinza"]
+fig3, ax3 = plt.subplots(figsize=(6, 4))  # <<< ZOOM CONTROLADO
+
+bars = ax3.bar(
+    df_mensal["MesAno"],
+    df_mensal["Energia Ativa (kwh)"],
+    color="#a3afc4"
 )
 
-ax3.set_title("Consumo Mensal de Energia")
-ax3.set_xlabel("Mês/Ano")
-ax3.set_ylabel("kWh")
+for bar in bars:
+    ax3.text(
+        bar.get_x() + bar.get_width() / 2,
+        bar.get_height(),
+        f"{bar.get_height():,.0f}",
+        ha="center",
+        va="bottom",
+        fontsize=8
+    )
 
-plt.xticks(rotation=45)
+ax3.set_ylabel("")
+ax3.set_yticks([])
+ax3.set_xlabel("")
+plt.xticks(rotation=30)
 
-st.pyplot(fig3, clear_figure=True)
-
-# =============================
-# RODAPÉ
-# =============================
-st.markdown("---")
-st.caption("Dashboard desenvolvido para acompanhamento de consumo energético")
+st.pyplot(fig3)
