@@ -15,7 +15,7 @@ st.title("📊 Consumo de Energia — Shopping Garden Itaqua")
 arquivo_excel = "ConsumoDiario.xlsx"
 
 # ===============================
-# LEITURA DAS ABAS
+# LEITURA DOS DADOS
 # ===============================
 
 # --- TABELA 1: CONSUMO DIÁRIO ---
@@ -25,17 +25,18 @@ df_diario = pd.read_excel(
 )
 
 # --- TABELA 2: CONSUMO HORÁRIO ---
-df_horario = pd.read_excel(
+df_horario_raw = pd.read_excel(
     arquivo_excel,
     sheet_name="Tabela2",
-    skiprows=3  # começa na linha do cabeçalho real
+    skiprows=3
 )
 
-df_horario.columns = [
-    "Hora",
-    "Energia_kwh",
-    "Energia_mwh"
-]
+# Garantir apenas as 3 colunas corretas
+df_horario = df_horario_raw.iloc[:, :3].copy()
+df_horario.columns = ["Hora", "Energia_kwh", "Energia_mwh"]
+
+# Converter hora para inteiro (segurança)
+df_horario["Hora"] = pd.to_numeric(df_horario["Hora"], errors="coerce")
 
 # --- TABELA 3: CONSUMO MENSAL ---
 df_mensal = pd.read_excel(
@@ -52,7 +53,7 @@ fig1, ax1 = plt.subplots(figsize=(6, 4))
 
 bars = ax1.bar(
     df_diario.iloc[:, 0],
-    df_diario.iloc[:, 3],  # Energia Ativa (mwh)
+    df_diario.iloc[:, 3],
     color="#90bf3b"
 )
 
@@ -68,7 +69,6 @@ for bar in bars:
 
 ax1.set_ylabel("")
 ax1.set_yticks([])
-ax1.set_xlabel("")
 plt.xticks(rotation=45)
 
 st.pyplot(fig1)
@@ -132,7 +132,6 @@ for bar in bars:
 
 ax3.set_ylabel("")
 ax3.set_yticks([])
-ax3.set_xlabel("")
 plt.xticks(rotation=30)
 
 st.pyplot(fig3)
