@@ -1,121 +1,165 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
+import plotly.express as px
 
-# =============================
-# CONFIGURAÇÃO STREAMLIT
-# =============================
-st.set_page_config(
-    page_title="Consumo de Energia | Shopping Garden Itaqua",
-    layout="centered"
-)
+# ===============================
+# CONFIG STREAMLIT
+# ===============================
+st.set_page_config(page_title="Consumo Garden Itaqua", layout="wide")
 
+st.title("📊 Consumo de Energia – Shopping Garden Itaqua")
+
+# ===============================
+# PALETA DE CORES (A MESMA PRA TUDO)
+# ===============================
+PALETA_CORES = ["#1f77b4", "#2ca02c", "#ff7f0e"]
+
+# ===============================
+# LEITURA DO EXCEL
+# ===============================
 arquivo_excel = "ConsumoDiario.xlsx"
 
-# Paleta
-COR_VERDE = "#90bf3b"
-COR_AZUL = "#263a64"
-COR_CINZA = "#a3afc4"
+df_excel = pd.read_excel(
+    arquivo_excel,
+    sheet_name=0,
+    header=None
+)
 
-def adicionar_rotulos(ax, formato="{:.1f}"):
-    for container in ax.containers:
-        ax.bar_label(container, fmt=formato, fontsize=9, padding=3)
+# ===============================
+# DATA DE REFERÊNCIA (C2)
+# ===============================
+data_referencia = pd.to_datetime(df_excel.iloc[1, 2])
+data_ref_fmt = data_referencia.strftime("%d/%m/%Y")
 
-st.title("📊 Consumo de Energia — Shopping Garden Itaqua")
-
-# =====================================================
-# GRÁFICO 1 — CONSUMO DIÁRIO (MWh)
-# Aba: Tabela
-# =====================================================
+# ===============================
+# -------------------------------
+# GRÁFICO 1 – CONSUMO DIÁRIO (MWh)
+# -------------------------------
+# Tabela de B5 até D28
+# B = Data | C = ??? | D = Consumo MWh
+# ===============================
 df_diario = pd.read_excel(
     arquivo_excel,
-    sheet_name="Tabela",
-    header=None
+    sheet_name=0,
+    usecols="B,D",
+    skiprows=4,
+    nrows=24
 )
 
-# A:E → dados começam na linha 2
-df_diario = df_diario.iloc[1:, [0, 3]]
-df_diario.columns = ["Data", "Consumo"]
-
+df_diario.columns = ["Data", "Consumo_MWh"]
 df_diario["Data"] = pd.to_datetime(df_diario["Data"])
-df_diario["Consumo"] = pd.to_numeric(df_diario["Consumo"], errors="coerce")
 
-# 🔥 TRANSFORMAR DATA EM CATEGORIA
-df_diario["Data_str"] = df_diario["Data"].dt.strftime("%d/%m")
+fig_diario = px.bar(
+    df_diario,
+    x="Data",
+    y="Consumo_MWh",
+    title="Consumo Diário (MWh)",
+    labels={
+        "Data": "Data",
+        "Consumo_MWh": "Consumo (MWh)"
+    },
+    color_discrete_sequence=[PALETA_CORES[0]]
+)
 
-fig1, ax1 = plt.subplots(figsize=(14, 5))
-ax1.bar(df_diario["Data_str"], df_diario["Consumo"], color=COR_VERDE)
+fig_diario.update_layout(
+    xaxis_tickformat="%d/%m",
+    bargap=0.15
+)
 
-ax1.set_title("Consumo Diário (MWh)")
-ax1.set_ylabel("MWh")
-ax1.grid(axis="y", alpha=0.3)
-ax1.tick_params(axis="x", rotation=45)
+fig_diario.update_traces(
+    texttemplate="%{y:.1f}",
+    textposition="outside"
+)
 
-adicionar_rotulos(ax1)
-
-plt.tight_layout()
-st.pyplot(fig1)
-
-# =====================================================
-# GRÁFICO 2 — CONSUMO HORÁRIO (MWh)
-# Aba: Tabela2
-# =====================================================
+# ===============================
+# --------------------------------
+# GRÁFICO 2 – CONSUMO HORÁRIO (MWh)
+# --------------------------------
+# Horas 1 a 24
+# Coluna D
+# ===============================
 df_horario = pd.read_excel(
     arquivo_excel,
-    sheet_name="Tabela2",
-    header=None
+    sheet_name=0,
+    usecols="D",
+    skiprows=4,
+    nrows=24
 )
 
-# B4:D28 → Hora / kWh / MWh
-df_horario = df_horario.iloc[4:28, [1, 3]]
-df_horario.columns = ["Hora", "Consumo"]
-
-# Força horas 1 a 24
+df_horario.columns = ["Consumo_MWh"]
 df_horario["Hora"] = range(1, 25)
-df_horario["Consumo"] = pd.to_numeric(df_horario["Consumo"], errors="coerce")
 
-fig2, ax2 = plt.subplots(figsize=(14, 5))
-ax2.bar(df_horario["Hora"], df_horario["Consumo"], color=COR_AZUL)
+fig_horario = px.bar(
+    df_horario,
+    x="Hora",
+    y="Consumo_MWh",
+    title=f"Consumo Horário (MWh) – Referente ao dia {data_ref_fmt}",
+    labels={
+        "Hora": "Hora do dia",
+        "Consumo_MWh": "Consumo (MWh)"
+    },
+    color_discrete_sequence=[PALETA_CORES[1]]
+)
 
-ax2.set_title("Consumo Horário (MWh)")
-ax2.set_xlabel("Hora")
-ax2.set_ylabel("MWh")
-ax2.set_xticks(range(1, 25))
-ax2.grid(axis="y", alpha=0.3)
+fig_horario.update_layout(
+    xaxis=dict(
+        tickmode="linear",
+        tick0=1,
+        dtick=1
+    ),
+    bargap=0.2
+)
 
-adicionar_rotulos(ax2)
+fig_horario.update_traces(
+    texttemplate="%{y:.1f}",
+    textposition="outside"
+)
 
-plt.tight_layout()
-st.pyplot(fig2)
-
-# =====================================================
-# GRÁFICO 3 — CONSUMO MENSAL (MWh)
-# Aba: Tabela3
-# =====================================================
+# ===============================
+# -------------------------------
+# GRÁFICO 3 – CONSUMO MENSAL (MWh)
+# -------------------------------
+# ===============================
 df_mensal = pd.read_excel(
     arquivo_excel,
-    sheet_name="Tabela3"
+    sheet_name="Mensal"
 )
 
 df_mensal["Data"] = pd.to_datetime(df_mensal["Data"])
-df_mensal["MesAno"] = df_mensal["Data"].dt.strftime("%m/%Y")
-df_mensal["Energia Ativa (mwh)"] = pd.to_numeric(
-    df_mensal["Energia Ativa (mwh)"], errors="coerce"
+
+df_mensal["Mes_Ano"] = df_mensal["Data"].dt.strftime("%m/%Y")
+
+fig_mensal = px.bar(
+    df_mensal,
+    x="Mes_Ano",
+    y="Consumo_MWh",
+    title="Consumo Mensal (MWh)",
+    labels={
+        "Mes_Ano": "Mês/Ano",
+        "Consumo_MWh": "Consumo (MWh)"
+    },
+    color_discrete_sequence=[PALETA_CORES[2]]
 )
 
-fig3, ax3 = plt.subplots(figsize=(10, 5))
-ax3.bar(
-    df_mensal["MesAno"],
-    df_mensal["Energia Ativa (mwh)"],
-    color=COR_CINZA
+fig_mensal.update_layout(
+    xaxis_tickangle=-45,
+    bargap=0.25
 )
 
-ax3.set_title("Consumo Mensal (MWh)")
-ax3.set_ylabel("MWh")
-ax3.grid(axis="y", alpha=0.3)
-ax3.tick_params(axis="x", rotation=45)
+fig_mensal.update_traces(
+    texttemplate="%{y:.1f}",
+    textposition="outside"
+)
 
-adicionar_rotulos(ax3)
+# ===============================
+# EXIBIÇÃO NO STREAMLIT
+# ===============================
+col1, col2 = st.columns(2)
 
-plt.tight_layout()
-st.pyplot(fig3)
+with col1:
+    st.plotly_chart(fig_diario, use_container_width=True)
+
+with col2:
+    st.plotly_chart(fig_horario, use_container_width=True)
+
+st.plotly_chart(fig_mensal, use_container_width=True)
