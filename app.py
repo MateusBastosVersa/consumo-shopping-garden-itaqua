@@ -1,159 +1,127 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-import calendar
 
-# ===============================
+# =============================
 # CONFIGURAÇÃO DA PÁGINA
-# ===============================
+# =============================
 st.set_page_config(
-    page_title="Consumo Energético | Shopping Garden Itaqua",
-    layout="wide"
+    page_title="Consumo de Energia | Shopping Garden Itaqua",
+    layout="centered"  # 👈 EVITA GRÁFICO GIGANTE
 )
 
-st.title("📊 Consumo Energético — Shopping Garden Itaqua")
+st.title("📊 Consumo de Energia — Shopping Garden Itaqua")
 
-# ===============================
-# CORES PADRÃO
-# ===============================
-COR_PRINCIPAL = "#90bf3b"
-COR_SECUNDARIA = "#263a64"
-COR_TERCIARIA = "#a3afc4"
-
-# ===============================
+# =============================
 # LEITURA DO EXCEL
-# ===============================
+# =============================
 arquivo_excel = "ConsumoDiario.xlsx"
 
-# Aba Tabela
-df_tabela = pd.read_excel(
+# -------- TABELA PRINCIPAL (Consumo Diário) --------
+df_diario = pd.read_excel(
     arquivo_excel,
-    sheet_name="Tabela"
+    sheet_name="ConsumoDiario"
 )
 
-df_tabela["Data"] = pd.to_datetime(df_tabela["Data"])
-
-# Aba Tabela2
-df_tabela2 = pd.read_excel(
+# -------- TABELA HORÁRIA --------
+df_horario = pd.read_excel(
     arquivo_excel,
-    sheet_name="Tabela2",
-    header=3,
-    usecols="B:D"
+    sheet_name="Tabela2"
 )
 
-df_tabela2.columns = ["Hora", "Energia Ativa (kwh)", "Energia Ativa (mwh)"]
-df_tabela2["Hora"] = df_tabela2["Hora"].astype(int)
-
-# Aba Tabela3 (NOVO)
+# -------- TABELA MENSAL --------
 df_tabela3 = pd.read_excel(
     arquivo_excel,
     sheet_name="Tabela3"
 )
 
-df_tabela3["Data"] = pd.to_datetime(df_tabela3["Data"])
+# =============================
+# AJUSTES DE DADOS
+# =============================
 
-# Cria coluna Mês/Ano em texto (ex: janeiro/2025)
-df_tabela3["MesAno"] = df_tabela3["Data"].apply(
-    lambda x: f"{calendar.month_name[x.month].capitalize()}/{x.year}"
-)
-
-# ===============================
-# GRÁFICO 1 — CONSUMO DIÁRIO
-# ===============================
-st.subheader("🔹 Consumo Diário — Energia Ativa (MWh)")
-
-fig1, ax1 = plt.subplots()
-
-bars = ax1.bar(
-    df_tabela["Data"].dt.strftime("%d/%m/%Y"),
-    df_tabela["Energia Ativa (mwh)"],
-    color=COR_PRINCIPAL
-)
-
-ax1.set_ylabel("")
-ax1.set_yticks([])
-ax1.set_xlabel("Data")
-
-for bar in bars:
-    altura = bar.get_height()
-    ax1.text(
-        bar.get_x() + bar.get_width() / 2,
-        altura,
-        f"{altura:.2f}",
-        ha="center",
-        va="bottom"
-    )
-
-st.pyplot(fig1)
-
-# ===============================
-# GRÁFICO 2 — CONSUMO HORÁRIO
-# ===============================
-st.subheader("🔹 Consumo Horário — Energia Ativa (MWh)")
-
+# --- Consumo horário: garantir horas 1 a 24 ---
 horas_completas = pd.DataFrame({"Hora": range(1, 25)})
-df_horario = horas_completas.merge(
-    df_tabela2,
-    on="Hora",
-    how="left"
-).fillna(0)
+df_horario = horas_completas.merge(df_horario, on="Hora", how="left")
+df_horario["Consumo"] = df_horario["Consumo"].fillna(0)
 
-fig2, ax2 = plt.subplots()
+# --- Consumo mensal: criar coluna Mês/Ano ---
+df_tabela3["Data"] = pd.to_datetime(df_tabela3["Data"])
+df_tabela3["Mes_Ano"] = df_tabela3["Data"].dt.strftime("%B/%Y")
 
-bars2 = ax2.bar(
+# =============================
+# CORES PADRÃO
+# =============================
+CORES = {
+    "verde": "#90bf3b",
+    "azul": "#263a64",
+    "cinza": "#a3afc4"
+}
+
+# =============================
+# GRÁFICO 1 — CONSUMO DIÁRIO
+# =============================
+st.subheader("📅 Consumo Diário")
+
+fig1, ax1 = plt.subplots(figsize=(7, 3))  # 👈 ZOOM CONTROLADO
+
+ax1.bar(
+    df_diario["Data"],
+    df_diario["Consumo"],
+    color=CORES["verde"]
+)
+
+ax1.set_title("Consumo Diário de Energia")
+ax1.set_xlabel("")
+ax1.set_ylabel("kWh")
+
+plt.xticks(rotation=45)
+
+st.pyplot(fig1, clear_figure=True)
+
+# =============================
+# GRÁFICO 2 — CONSUMO HORÁRIO
+# =============================
+st.subheader("⏰ Consumo Horário")
+
+fig2, ax2 = plt.subplots(figsize=(7, 3))  # 👈 ZOOM CONTROLADO
+
+ax2.plot(
     df_horario["Hora"],
-    df_horario["Energia Ativa (mwh)"],
-    color=COR_SECUNDARIA
+    df_horario["Consumo"],
+    marker="o",
+    color=CORES["azul"]
 )
 
-ax2.set_xticks(range(1, 25))
+ax2.set_title("Consumo Horário Médio")
 ax2.set_xlabel("Hora")
-ax2.set_ylabel("")
-ax2.set_yticks([])
+ax2.set_ylabel("kWh")
+ax2.set_xticks(range(1, 25))
 
-for bar in bars2:
-    altura = bar.get_height()
-    ax2.text(
-        bar.get_x() + bar.get_width() / 2,
-        altura,
-        f"{altura:.2f}",
-        ha="center",
-        va="bottom",
-        fontsize=8
-    )
+st.pyplot(fig2, clear_figure=True)
 
-st.pyplot(fig2)
+# =============================
+# GRÁFICO 3 — CONSUMO MENSAL
+# =============================
+st.subheader("📆 Consumo Mensal")
 
-# ===============================
-# GRÁFICO 3 — CONSUMO MENSAL (NOVO)
-# ===============================
-st.subheader("🔹 Consumo Mensal — Energia Ativa (MWh)")
+fig3, ax3 = plt.subplots(figsize=(7, 3))  # 👈 ZOOM CONTROLADO
 
-fig3, ax3 = plt.subplots()
-
-bars3 = ax3.bar(
-    df_tabela3["MesAno"],
-    df_tabela3["Energia Ativa (mwh)"],
-    color=COR_TERCIARIA
+ax3.bar(
+    df_tabela3["Mes_Ano"],
+    df_tabela3["Energia Ativa (kwh)"],
+    color=CORES["cinza"]
 )
 
-ax3.set_xlabel("Mês / Ano")
-ax3.set_ylabel("")
-ax3.set_yticks([])
+ax3.set_title("Consumo Mensal de Energia")
+ax3.set_xlabel("Mês/Ano")
+ax3.set_ylabel("kWh")
 
-for bar in bars3:
-    altura = bar.get_height()
-    ax3.text(
-        bar.get_x() + bar.get_width() / 2,
-        altura,
-        f"{altura:.2f}",
-        ha="center",
-        va="bottom"
-    )
+plt.xticks(rotation=45)
 
-st.pyplot(fig3)
+st.pyplot(fig3, clear_figure=True)
 
-# ===============================
+# =============================
 # RODAPÉ
-# ===============================
-st.caption("Fonte: ConsumoDiario.xlsx | Atualização manual via Git")
+# =============================
+st.markdown("---")
+st.caption("Dashboard desenvolvido para acompanhamento de consumo energético")
