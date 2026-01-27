@@ -6,12 +6,10 @@ st.set_page_config(layout="wide")
 
 arquivo_excel = "ConsumoDiario.xlsx"
 
-# =========================
+# =====================================================
 # GRÁFICO 1 — CONSUMO DIÁRIO (MWh)
 # Aba: Tabela
-# Eixo X: DATA
-# Eixo Y: COLUNA D (Energia Ativa mwh)
-# =========================
+# =====================================================
 df_diario = pd.read_excel(
     arquivo_excel,
     sheet_name="Tabela",
@@ -19,29 +17,23 @@ df_diario = pd.read_excel(
     usecols="B:D"
 )
 
-df_diario.columns = ["Data", "Consumo_kWh", "Energia_Ativa_MWh"]
+df_diario.columns = ["Data", "Consumo_kWh", "Consumo_MWh"]
 
 df_diario["Data"] = pd.to_datetime(df_diario["Data"])
-df_diario["Energia_Ativa_MWh"] = df_diario["Energia_Ativa_MWh"].astype(float)
-
-# 🔥 SOLUÇÃO DEFINITIVA — DATA COMO TEXTO
-df_diario["Data_str"] = df_diario["Data"].dt.strftime("%d/%m/%Y")
+df_diario["Dia"] = df_diario["Data"].dt.strftime("%d/%m")
+df_diario["Consumo_MWh"] = df_diario["Consumo_MWh"].astype(float)
 
 fig_diario = px.bar(
     df_diario,
-    x="Data_str",
-    y="Energia_Ativa_MWh",
-    text=df_diario["Energia_Ativa_MWh"].round(1),
-    title="Consumo Diário de Energia Ativa (MWh)",
+    x="Dia",
+    y="Consumo_MWh",
+    text=df_diario["Consumo_MWh"].round(1),
+    title="Consumo Diário de Energia (MWh)",
     color_discrete_sequence=["#90bf3b"]
 )
 
 fig_diario.update_layout(
-    xaxis=dict(
-        title="Data",
-        type="category",
-        tickangle=-45
-    ),
+    xaxis_title="Dia",
     yaxis_title="MWh",
     bargap=0.25
 )
@@ -51,10 +43,10 @@ fig_diario.update_traces(
     textfont_size=12
 )
 
-# =========================
+# =====================================================
 # GRÁFICO 2 — CONSUMO HORÁRIO (MWh)
 # Aba: Tabela2
-# =========================
+# =====================================================
 df_horario = pd.read_excel(
     arquivo_excel,
     sheet_name="Tabela2",
@@ -63,7 +55,6 @@ df_horario = pd.read_excel(
 )
 
 df_horario.columns = ["Hora", "Consumo_kWh", "Consumo_MWh"]
-
 df_horario["Hora"] = df_horario["Hora"].astype(int)
 df_horario["Consumo_MWh"] = df_horario["Consumo_MWh"].astype(float)
 
@@ -72,16 +63,16 @@ fig_horario = px.bar(
     x="Hora",
     y="Consumo_MWh",
     text=df_horario["Consumo_MWh"].round(1),
-    title="Consumo Horário de Energia (MWh) — Dia Anterior",
+    title="Consumo Horário de Energia (MWh) — Referente ao dia anterior",
     color_discrete_sequence=["#263a64"]
 )
 
 fig_horario.update_layout(
     xaxis=dict(
-        title="Hora",
         tickmode="linear",
         dtick=1
     ),
+    xaxis_title="Hora",
     yaxis_title="MWh"
 )
 
@@ -90,10 +81,10 @@ fig_horario.update_traces(
     textfont_size=12
 )
 
-# =========================
+# =====================================================
 # GRÁFICO 3 — CONSUMO MENSAL (MWh)
 # Aba: Tabela3
-# =========================
+# =====================================================
 df_mensal = pd.read_excel(
     arquivo_excel,
     sheet_name="Tabela3",
@@ -123,9 +114,9 @@ fig_mensal.update_traces(
     textfont_size=12
 )
 
-# =========================
+# =====================================================
 # EXIBIÇÃO
-# =========================
+# =====================================================
 st.title("📊 Dashboard de Consumo de Energia")
 
 st.plotly_chart(fig_diario, use_container_width=True)
