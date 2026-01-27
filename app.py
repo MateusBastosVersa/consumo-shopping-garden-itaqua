@@ -2,13 +2,29 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-st.set_page_config(page_title="Consumo de Energia", layout="wide")
+st.set_page_config(
+    page_title="Shopping Garden Itaqua",
+    layout="wide"
+)
 
 # =========================
 # CONFIGURAÇÕES
 # =========================
 arquivo_excel = "ConsumoDiario.xlsx"
-paleta = ["#90bf3b", "#263a64", "#a3afc4"]
+paleta_diario = ["#90bf3b"]
+paleta_horario = ["#263a64"]
+paleta_mensal = ["#a3afc4"]
+
+# =========================
+# TÍTULO PRINCIPAL
+# =========================
+st.title("🏬 Shopping Garden Itaqua")
+st.markdown(
+    "📊 **Dashboard de Consumo de Energia Elétrica**",
+    unsafe_allow_html=True
+)
+
+st.divider()
 
 # =========================
 # GRÁFICO 1 — CONSUMO DIÁRIO (MWh)
@@ -20,7 +36,6 @@ df_diario = pd.read_excel(
     header=0
 )
 
-# Col A: Data | Col D: Energia Ativa (MWh)
 df_diario = df_diario.iloc[:, [0, 3]]
 df_diario.columns = ["Data", "Consumo_MWh"]
 df_diario["Data"] = pd.to_datetime(df_diario["Data"])
@@ -29,21 +44,17 @@ fig_diario = px.bar(
     df_diario,
     x="Data",
     y="Consumo_MWh",
-    title="Consumo Diário de Energia (MWh)",
-    color_discrete_sequence=[paleta[0]],
-    text=df_diario["Consumo_MWh"].round(1)
+    text=df_diario["Consumo_MWh"].round(1),
+    title="📅 Consumo Diário de Energia (MWh)",
+    color_discrete_sequence=paleta_diario
 )
 
 fig_diario.update_layout(
-    xaxis=dict(
-        title="Data",
-        tickmode="linear",
-        dtick="D",
-        tickformat="%d/%m",
-        tickangle=-45
-    ),
+    xaxis_title="Data",
     yaxis_title="MWh",
-    bargap=0.2
+    xaxis_tickformat="%d/%m",
+    xaxis_tickangle=-45,
+    bargap=0.25
 )
 
 fig_diario.update_traces(
@@ -52,6 +63,8 @@ fig_diario.update_traces(
 )
 
 st.plotly_chart(fig_diario, use_container_width=True)
+
+st.divider()
 
 # =========================
 # GRÁFICO 2 — CONSUMO HORÁRIO (MWh)
@@ -71,20 +84,18 @@ fig_horario = px.bar(
     df_horario,
     x="Hora",
     y="Consumo_MWh",
-    title="Consumo Horário (MWh) – Referente ao dia anterior",
-    color_discrete_sequence=[paleta[1]],
-    text=df_horario["Consumo_MWh"].round(1)
+    text=df_horario["Consumo_MWh"].round(1),
+    title="⏱️ Consumo Horário de Energia (MWh) — Dia Anterior",
+    color_discrete_sequence=paleta_horario
 )
 
 fig_horario.update_layout(
-    xaxis=dict(
-        title="Hora",
-        tickmode="linear",
-        tick0=1,
-        dtick=1
-    ),
+    xaxis_title="Hora do Dia",
     yaxis_title="MWh",
-    bargap=0.15
+    xaxis_tickmode="linear",
+    xaxis_tick0=1,
+    xaxis_dtick=1,
+    bargap=0.2
 )
 
 fig_horario.update_traces(
@@ -93,6 +104,8 @@ fig_horario.update_traces(
 )
 
 st.plotly_chart(fig_horario, use_container_width=True)
+
+st.divider()
 
 # =========================
 # GRÁFICO 3 — CONSUMO MENSAL (MWh)
@@ -104,25 +117,26 @@ df_mensal = pd.read_excel(
     header=0
 )
 
-# Col A: Data | Col E: Energia Ativa (MWh)
 df_mensal = df_mensal.iloc[:, [0, 4]]
 df_mensal.columns = ["Data", "Consumo_MWh"]
 df_mensal["Data"] = pd.to_datetime(df_mensal["Data"])
 df_mensal["MesAno"] = df_mensal["Data"].dt.strftime("%m/%Y")
 
-df_mensal_agg = df_mensal.groupby("MesAno", as_index=False)["Consumo_MWh"].sum()
+df_mensal_agg = df_mensal.groupby(
+    "MesAno", as_index=False
+)["Consumo_MWh"].sum()
 
 fig_mensal = px.bar(
     df_mensal_agg,
     x="MesAno",
     y="Consumo_MWh",
-    title="Consumo Mensal (MWh)",
-    color_discrete_sequence=[paleta[2]],
-    text=df_mensal_agg["Consumo_MWh"].round(1)
+    text=df_mensal_agg["Consumo_MWh"].round(1),
+    title="📈 Consumo Mensal de Energia (MWh)",
+    color_discrete_sequence=paleta_mensal
 )
 
 fig_mensal.update_layout(
-    xaxis_title="Mês/Ano",
+    xaxis_title="Mês / Ano",
     yaxis_title="MWh",
     bargap=0.3
 )
