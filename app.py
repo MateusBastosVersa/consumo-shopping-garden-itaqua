@@ -30,15 +30,10 @@ fig_diario = px.bar(
     color_discrete_sequence=["#90bf3b"]
 )
 
+# ⚠️ VOLTANDO AO COMPORTAMENTO ORIGINAL (SEM FORÇAR EIXO X)
 fig_diario.update_layout(
-    xaxis=dict(
-        tickmode="linear",
-        dtick="D",
-        tickformat="%d/%m",
-        tickangle=-45
-    ),
     yaxis_title="MWh",
-    bargap=0.2
+    bargap=0.25
 )
 
 fig_diario.update_traces(
@@ -107,7 +102,6 @@ fig_mensal = px.bar(
 )
 
 fig_mensal.update_layout(
-    xaxis_title="Mês/Ano",
     yaxis_title="MWh"
 )
 
@@ -117,7 +111,7 @@ fig_mensal.update_traces(
 )
 
 # =========================
-# EXIBIÇÃO NO STREAMLIT
+# EXIBIÇÃO
 # =========================
 st.title("📊 Dashboard de Consumo de Energia")
 
