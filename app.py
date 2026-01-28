@@ -8,6 +8,13 @@ st.set_page_config(
 )
 
 # =========================
+# FUNÇÃO PARA AJUSTAR EIXO Y
+# =========================
+def ajustar_eixo_y(fig, df, coluna, margem=1.2):
+    max_y = df[coluna].max()
+    fig.update_yaxes(range=[0, max_y * margem])
+
+# =========================
 # CONFIGURAÇÕES
 # =========================
 arquivo_excel = "ConsumoDiario.xlsx"
@@ -28,7 +35,6 @@ st.divider()
 
 # =========================
 # GRÁFICO 1 — CONSUMO DIÁRIO (MWh)
-# Aba: Tabela
 # =========================
 df_diario = pd.read_excel(
     arquivo_excel,
@@ -62,13 +68,15 @@ fig_diario.update_traces(
     textfont_size=14
 )
 
+# 🔧 AJUSTE DO EIXO Y
+ajustar_eixo_y(fig_diario, df_diario, "Consumo_MWh")
+
 st.plotly_chart(fig_diario, use_container_width=True)
 
 st.divider()
 
 # =========================
 # GRÁFICO 2 — CONSUMO HORÁRIO (MWh)
-# Aba: Tabela2
 # =========================
 df_horario = pd.read_excel(
     arquivo_excel,
@@ -103,13 +111,15 @@ fig_horario.update_traces(
     textfont_size=14
 )
 
+# 🔧 AJUSTE DO EIXO Y
+ajustar_eixo_y(fig_horario, df_horario, "Consumo_MWh")
+
 st.plotly_chart(fig_horario, use_container_width=True)
 
 st.divider()
 
 # =========================
 # GRÁFICO 3 — CONSUMO MENSAL (MWh)
-# Aba: Tabela3
 # =========================
 df_mensal = pd.read_excel(
     arquivo_excel,
@@ -145,5 +155,8 @@ fig_mensal.update_traces(
     textposition="outside",
     textfont_size=14
 )
+
+# 🔧 AJUSTE DO EIXO Y
+ajustar_eixo_y(fig_mensal, df_mensal_agg, "Consumo_MWh")
 
 st.plotly_chart(fig_mensal, use_container_width=True)
