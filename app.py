@@ -68,7 +68,6 @@ fig_diario.update_traces(
     textfont_size=14
 )
 
-# 🔧 AJUSTE DO EIXO Y
 ajustar_eixo_y(fig_diario, df_diario, "Consumo_MWh")
 
 st.plotly_chart(fig_diario, use_container_width=True)
@@ -111,7 +110,6 @@ fig_horario.update_traces(
     textfont_size=14
 )
 
-# 🔧 AJUSTE DO EIXO Y
 ajustar_eixo_y(fig_horario, df_horario, "Consumo_MWh")
 
 st.plotly_chart(fig_horario, use_container_width=True)
@@ -120,6 +118,7 @@ st.divider()
 
 # =========================
 # GRÁFICO 3 — CONSUMO MENSAL (MWh)
+# ORDENADO CRONOLOGICAMENTE (EXATAMENTE COMO NO EXCEL)
 # =========================
 df_mensal = pd.read_excel(
     arquivo_excel,
@@ -130,11 +129,19 @@ df_mensal = pd.read_excel(
 df_mensal = df_mensal.iloc[:, [0, 4]]
 df_mensal.columns = ["Data", "Consumo_MWh"]
 df_mensal["Data"] = pd.to_datetime(df_mensal["Data"])
-df_mensal["MesAno"] = df_mensal["Data"].dt.strftime("%m/%Y")
 
-df_mensal_agg = df_mensal.groupby(
-    "MesAno", as_index=False
-)["Consumo_MWh"].sum()
+# 🔥 Agrupa por mês mantendo Data real
+df_mensal_agg = (
+    df_mensal
+    .groupby(pd.Grouper(key="Data", freq="MS"), as_index=False)
+    .sum()
+)
+
+# 🔥 Ordena corretamente
+df_mensal_agg = df_mensal_agg.sort_values("Data")
+
+# 🔥 Cria rótulo Mes/Ano após ordenar
+df_mensal_agg["MesAno"] = df_mensal_agg["Data"].dt.strftime("%m/%Y")
 
 fig_mensal = px.bar(
     df_mensal_agg,
@@ -156,7 +163,6 @@ fig_mensal.update_traces(
     textfont_size=14
 )
 
-# 🔧 AJUSTE DO EIXO Y
 ajustar_eixo_y(fig_mensal, df_mensal_agg, "Consumo_MWh")
 
 st.plotly_chart(fig_mensal, use_container_width=True)
