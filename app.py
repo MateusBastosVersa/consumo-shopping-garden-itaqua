@@ -2,6 +2,9 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
+# =========================
+# CONFIGURAÇÃO DA PÁGINA
+# =========================
 st.set_page_config(
     page_title="Shopping Garden Itaqua",
     layout="wide"
@@ -10,7 +13,7 @@ st.set_page_config(
 # =========================
 # FUNÇÃO PARA AJUSTAR EIXO Y
 # =========================
-def ajustar_eixo_y(fig, df, coluna, margem=1.2):
+def ajustar_eixo_y(fig, df, coluna, margem=1.25):
     max_y = df[coluna].max()
     fig.update_yaxes(range=[0, max_y * margem])
 
@@ -18,6 +21,7 @@ def ajustar_eixo_y(fig, df, coluna, margem=1.2):
 # CONFIGURAÇÕES
 # =========================
 arquivo_excel = "ConsumoDiario.xlsx"
+
 paleta_diario = ["#90bf3b"]
 paleta_horario = ["#263a64"]
 paleta_mensal = ["#a3afc4"]
@@ -26,15 +30,13 @@ paleta_mensal = ["#a3afc4"]
 # TÍTULO PRINCIPAL
 # =========================
 st.title("🏬 Shopping Garden Itaqua")
-st.markdown(
-    "📊 **Dashboard de Consumo de Energia Elétrica**",
-    unsafe_allow_html=True
-)
+st.markdown("📊 **Dashboard de Consumo de Energia Elétrica**")
 
 st.divider()
 
 # =========================
 # GRÁFICO 1 — CONSUMO DIÁRIO (MWh)
+# Aba: Tabela
 # =========================
 df_diario = pd.read_excel(
     arquivo_excel,
@@ -42,6 +44,7 @@ df_diario = pd.read_excel(
     header=0
 )
 
+# Col A = Data | Col D = Energia Ativa (MWh)
 df_diario = df_diario.iloc[:, [0, 3]]
 df_diario.columns = ["Data", "Consumo_MWh"]
 df_diario["Data"] = pd.to_datetime(df_diario["Data"])
@@ -76,6 +79,7 @@ st.divider()
 
 # =========================
 # GRÁFICO 2 — CONSUMO HORÁRIO (MWh)
+# Aba: Tabela2
 # =========================
 df_horario = pd.read_excel(
     arquivo_excel,
@@ -84,6 +88,7 @@ df_horario = pd.read_excel(
     usecols="B:D"
 )
 
+# B = Hora | D = Energia Ativa (MWh)
 df_horario.columns = ["Hora", "Ignorar", "Consumo_MWh"]
 df_horario = df_horario[["Hora", "Consumo_MWh"]]
 
@@ -118,7 +123,7 @@ st.divider()
 
 # =========================
 # GRÁFICO 3 — CONSUMO MENSAL (MWh)
-# ORDENADO CRONOLOGICAMENTE (EXATAMENTE COMO NO EXCEL)
+# Aba: Tabela3
 # =========================
 df_mensal = pd.read_excel(
     arquivo_excel,
@@ -126,21 +131,23 @@ df_mensal = pd.read_excel(
     header=0
 )
 
+# Col A = Data | Col E = Energia Ativa (MWh)
 df_mensal = df_mensal.iloc[:, [0, 4]]
 df_mensal.columns = ["Data", "Consumo_MWh"]
 df_mensal["Data"] = pd.to_datetime(df_mensal["Data"])
 
-# 🔥 Agrupa por mês mantendo Data real
+# 🔥 Agrupa por mês mantendo Data como coluna
 df_mensal_agg = (
     df_mensal
-    .groupby(pd.Grouper(key="Data", freq="MS"), as_index=False)
+    .groupby(pd.Grouper(key="Data", freq="MS"))["Consumo_MWh"]
     .sum()
+    .reset_index()
 )
 
-# 🔥 Ordena corretamente
+# 🔥 Ordena corretamente (01/2026 vai para o final)
 df_mensal_agg = df_mensal_agg.sort_values("Data")
 
-# 🔥 Cria rótulo Mes/Ano após ordenar
+# 🔥 Cria rótulo após ordenar
 df_mensal_agg["MesAno"] = df_mensal_agg["Data"].dt.strftime("%m/%Y")
 
 fig_mensal = px.bar(
